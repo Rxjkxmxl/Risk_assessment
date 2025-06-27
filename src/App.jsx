@@ -4,8 +4,8 @@ import React, { useState } from 'react';
 import LandingPage from './components/LandingPage';
 import Questionnaire from './components/Questionnaire';
 import Dashboard from './components/Dashboard';
-import { riskQuestions } from './data/riskData'; // Make sure this path is correct
-import { calculateRiskProfile } from './utils/calculateRisk'; // Make sure this path is correct
+import { riskQuestions } from './data/riskData';
+import { calculateRiskProfile } from './utils/calculateRisk';
 
 function App() {
   // State to hold all the user's answers
@@ -19,13 +19,12 @@ function App() {
   
   // This function is called when the "Start Assessment" button is clicked
   const handleStartQuiz = () => {
+    console.log("Start button clicked. Setting isQuizStarted to true."); // <-- Debugging line
     setIsQuizStarted(true);
   };
 
   // This function is called every time a user selects an answer
-  // NOTE: I've updated this function to match the data structure from our plan.
   const handleAnswerSelect = (questionId, optionId, riskValue) => {
-    // Save the answer
     const newAnswers = { ...answers, [questionId]: { optionId, riskValue } };
     setAnswers(newAnswers);
 
