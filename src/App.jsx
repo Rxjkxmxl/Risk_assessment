@@ -1,73 +1,82 @@
 // src/App.jsx
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; // Import useEffect
 import LandingPage from './components/LandingPage';
 import Questionnaire from './components/Questionnaire';
 import Dashboard from './components/Dashboard';
 import { riskQuestions } from './data/riskData';
 import { calculateRiskProfile } from './utils/calculateRisk';
 
+const APP_STATE_KEY = 'riskAssessorState';
+
 function App() {
-  // State to hold all the user's answers
-  const [answers, setAnswers] = useState({});
-  // State to track which question we are on
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  // State to check if the quiz has started (to move from LandingPage to Questionnaire)
-  const [isQuizStarted, setIsQuizStarted] = useState(false);
-  // State to check if the quiz is finished (to move from Questionnaire to Dashboard)
+  // Load initial state from localStorage, or use default values
+  const [appState, setAppState] = useState(() => {
+    const savedState = localStorage.getItem(APP_STATE_KEY);
+    if (savedState) {
+      return JSON.parse(savedState);
+    }
+    return {
+      answers: {},
+      currentQuestionIndex: 0,
+      isQuizStarted: false,
+    };
+  });
+
   const [showResults, setShowResults] = useState(false);
-  
-  // This function is called when the "Start Assessment" button is clicked
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem(APP_STATE_KEY, JSON.stringify(appState));
+  }, [appState]);
+
   const handleStartQuiz = () => {
-    console.log("Start button clicked. Setting isQuizStarted to true."); // <-- Debugging line
-    setIsQuizStarted(true);
+    setAppState(prev => ({ ...prev, isQuizStarted: true }));
   };
 
-  // This function is called every time a user selects an answer
   const handleAnswerSelect = (questionId, optionId, riskValue) => {
-    const newAnswers = { ...answers, [questionId]: { optionId, riskValue } };
-    setAnswers(newAnswers);
+    const newAnswers = { ...appState.answers, [questionId]: { optionId, riskValue } };
 
-    // Check if there are more questions left
-    if (currentQuestionIndex < riskQuestions.length - 1) {
-      // If yes, move to the next question
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
+    if (appState.currentQuestionIndex < riskQuestions.length - 1) {
+      setAppState(prev => ({
+        ...prev,
+        answers: newAnswers,
+        currentQuestionIndex: prev.currentQuestionIndex + 1
+      }));
     } else {
-      // If no, it's the last question. Time to show the results.
+      setAppState(prev => ({ ...prev, answers: newAnswers }));
       setShowResults(true);
     }
   };
 
-  // This function resets the app to its initial state
   const handleReset = () => {
-    setAnswers({});
-    setCurrentQuestionIndex(0);
-    setIsQuizStarted(false);
+    // Clear state and localStorage
+    const freshState = {
+      answers: {},
+      currentQuestionIndex: 0,
+      isQuizStarted: false,
+    };
+    setAppState(freshState);
     setShowResults(false);
+    localStorage.removeItem(APP_STATE_KEY);
   };
 
-  // --- This is the rendering logic ---
-  // It checks the state to decide what to show on the screen.
-
-  // 1. If the quiz is finished, calculate results and show the Dashboard
+  // --- RENDER LOGIC ---
   if (showResults) {
-    const results = calculateRiskProfile(answers);
+    const results = calculateRiskProfile(appState.answers);
     return <Dashboard results={results} onReset={handleReset} />;
   }
 
-  // 2. If the quiz has started but is not finished, show the Questionnaire
-  if (isQuizStarted) {
+  if (appState.isQuizStarted) {
     return (
       <Questionnaire
-        question={riskQuestions[currentQuestionIndex]}
+        question={riskQuestions[appState.currentQuestionIndex]}
         onAnswerSelect={handleAnswerSelect}
-        currentIndex={currentQuestionIndex}
+        currentIndex={appState.currentQuestionIndex}
         totalQuestions={riskQuestions.length}
       />
     );
   }
 
-  // 3. By default (at the very beginning), show the LandingPage
   return <LandingPage onStart={handleStartQuiz} />;
 }
 
