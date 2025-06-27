@@ -1,83 +1,34 @@
 // src/App.jsx
-import React, { useState, useEffect } from 'react'; // Import useEffect
-import LandingPage from './components/LandingPage';
-import Questionnaire from './components/Questionnaire';
-import Dashboard from './components/Dashboard';
-import { riskQuestions } from './data/riskData';
-import { calculateRiskProfile } from './utils/calculateRisk';
-
-const APP_STATE_KEY = 'riskAssessorState';
+import React from 'react';
+import { Routes, Route } from 'react-router-dom';
+import { useAuth } from './context/AuthContext';
+import Assessor from './components/Assessor'; // We will create this
+import Signup from './components/Signup';
+import Login from './components/Login';
+import ProtectedRoute from './components/ProtectedRoute';
+import History from './components/History';
 
 function App() {
-  // Load initial state from localStorage, or use default values
-  const [appState, setAppState] = useState(() => {
-    const savedState = localStorage.getItem(APP_STATE_KEY);
-    if (savedState) {
-      return JSON.parse(savedState);
-    }
-    return {
-      answers: {},
-      currentQuestionIndex: 0,
-      isQuizStarted: false,
-    };
-  });
+  const { currentUser } = useAuth();
 
-  const [showResults, setShowResults] = useState(false);
-
-  // Save state to localStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem(APP_STATE_KEY, JSON.stringify(appState));
-  }, [appState]);
-
-  const handleStartQuiz = () => {
-    setAppState(prev => ({ ...prev, isQuizStarted: true }));
-  };
-
-  const handleAnswerSelect = (questionId, optionId, riskValue) => {
-    const newAnswers = { ...appState.answers, [questionId]: { optionId, riskValue } };
-
-    if (appState.currentQuestionIndex < riskQuestions.length - 1) {
-      setAppState(prev => ({
-        ...prev,
-        answers: newAnswers,
-        currentQuestionIndex: prev.currentQuestionIndex + 1
-      }));
-    } else {
-      setAppState(prev => ({ ...prev, answers: newAnswers }));
-      setShowResults(true);
-    }
-  };
-
-  const handleReset = () => {
-    // Clear state and localStorage
-    const freshState = {
-      answers: {},
-      currentQuestionIndex: 0,
-      isQuizStarted: false,
-    };
-    setAppState(freshState);
-    setShowResults(false);
-    localStorage.removeItem(APP_STATE_KEY);
-  };
-
-  // --- RENDER LOGIC ---
-  if (showResults) {
-    const results = calculateRiskProfile(appState.answers);
-    return <Dashboard results={results} onReset={handleReset} />;
-  }
-
-  if (appState.isQuizStarted) {
-    return (
-      <Questionnaire
-        question={riskQuestions[appState.currentQuestionIndex]}
-        onAnswerSelect={handleAnswerSelect}
-        currentIndex={appState.currentQuestionIndex}
-        totalQuestions={riskQuestions.length}
+  return (
+    <Routes>
+      <Route path="/" element={
+          <ProtectedRoute>
+            {/* If a user has past results, maybe redirect to /history? For now, we go to assessor */}
+            <Assessor />
+          </ProtectedRoute>
+        } 
       />
-    );
-  }
-
-  return <LandingPage onStart={handleStartQuiz} />;
+      <Route path="/history" element={
+        <ProtectedRoute>
+          <History />
+        </ProtectedRoute>
+      } />
+      <Route path="/signup" element={<Signup />} />
+      <Route path="/login" element={<Login />} />
+    </Routes>
+  );
 }
 
 export default App;
