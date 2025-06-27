@@ -1,32 +1,34 @@
 // src/App.jsx
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
-import { useAuth } from './context/AuthContext';
-import Assessor from './components/Assessor'; // We will create this
+import Layout from './components/Layout'; // Import the new Layout
+import Assessor from './components/Assessor';
 import Signup from './components/Signup';
 import Login from './components/Login';
 import ProtectedRoute from './components/ProtectedRoute';
 import History from './components/History';
 
 function App() {
-  const { currentUser } = useAuth();
-
   return (
     <Routes>
-      <Route path="/" element={
-          <ProtectedRoute>
-            {/* If a user has past results, maybe redirect to /history? For now, we go to assessor */}
-            <Assessor />
-          </ProtectedRoute>
-        } 
-      />
-      <Route path="/history" element={
-        <ProtectedRoute>
-          <History />
-        </ProtectedRoute>
-      } />
+      {/* Public routes for login and signup */}
       <Route path="/signup" element={<Signup />} />
       <Route path="/login" element={<Login />} />
+
+      {/* This is the new, cleaner way to protect multiple routes */}
+      <Route 
+        path="/" 
+        element={
+          <ProtectedRoute>
+            <Layout />
+          </ProtectedRoute>
+        }
+      >
+        {/* These routes are children of the Layout route */}
+        {/* They will render inside the <Outlet /> */}
+        <Route index element={<Assessor />} /> {/* 'index' means this is the default for '/' */}
+        <Route path="history" element={<History />} />
+      </Route>
     </Routes>
   );
 }
